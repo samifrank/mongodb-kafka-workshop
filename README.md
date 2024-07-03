@@ -47,18 +47,18 @@ There are two tools we will need for this workshop. If you do not already have t
       ![image](https://github.com/samifrank/mongodb-kafka-workshop/assets/84085490/4c28d09b-d39d-4543-a155-78316c7189d8)
 </details>
 
-## Getting Started
+## Get The Workshop Running
 
 > [!WARNING]  
 > In order to properly connect to your local mongo in this `docker-compose` file, **we need to be able to resolve the mongo host created in the docker container on our machine** (outside of the docker environment).
 > 
-> Add a new host definition for your local IP address to include mongo in your laptops `/etc/hosts` file to include:
+> _Add a new host definition for your local IP address to include mongo in your machines_ `/etc/hosts` file to include:
 > 
 > `127.0.0.1       mongo-node1`
 > 
 > _note_: `mongo-node1` is the main mongo container created in the provided file `docker-compose.yml`
 > 
-> Using a normal text editor: find `/etc/hosts` and add the definition noted above.
+> Using a normal text editor: find your `/etc/hosts` and add the definition noted above.
 > 
 > In a terminal:
 >   1. navigate to the `/etc` directory on your machine
@@ -97,12 +97,13 @@ There are two tools we will need for this workshop. If you do not already have t
 >   * **mongosh**: The mongo shell is a Javascript environment that is used to interact with the mongod process. It is available on many MongoDB GUIs as well as downloadable for use on terminal.
 >   * **replica set**: An odd number of mongod instances that maintain the same set of data.
 
- 1. Add data to mongo
-    * 🌟 Create a Database and a collection using the sample_mflix movie data set.
-      * In the demo, we call the database `netflix` and the collection `movies`. We also import the other data sets in the sample_mflix as well and store them as other collections. The demo only utilizes the movies dataset, though.
-    * Add data to this new collection by importing a JSON file.
-      * :magic_wand: When you perform an import in Compass, the tool leverages a MongoDB command called [mongoimport](https://www.mongodb.com/docs/database-tools/mongoimport/) . If you were to load data from the terminal, this is the exact command you would use it the mongosh.
-    * Congratulations! You officially have a three node [replica set](https://www.mongodb.com/docs/manual/replication/) populated with data!
+ 1. 🌟 Create a Database and a collection using the sample_mflix movie data set.
+    
+    a. In the demo, we call the database `netflix` and the collection `movies`. We also import the other data sets in the sample_mflix as well and store them as other collections. The demo only utilizes the movies dataset, though.
+2. Add data to this new collection by importing a JSON file.
+    
+    a. :magic_wand: When you perform an import in Compass, the tool leverages a MongoDB command called [mongoimport](https://www.mongodb.com/docs/database-tools/mongoimport/) . If you were to load data from the terminal, this is the exact command you would use it the mongosh.
+3. Congratulations! You officially have a three node [replica set](https://www.mongodb.com/docs/manual/replication/) populated with data!
 
 ### Exploring the Replica Set
 1. Find the `>_MONGOSH` at the bottom of your Compass screen.
@@ -229,15 +230,15 @@ Now, in your first window where you were watching the cursor, you should see 31 
 
    * They’ll look pretty bare bones at first until we start moving data with a connector.
 
-   💭 Take a look back at these topics after you get a **connector** running to see what kind of data they hold.
+     💭 Take a look back at these topics after you get a **connector** running to see what kind of data they hold.
 
-   `docker-connect-configs`: Stores the connector and task configurations. Connect worker nodes will listen to changes here in order to pick up and use the latest configs.
+     `docker-connect-configs`: Stores the connector and task configurations. Connect worker nodes will listen to changes here in order to pick up and use the latest configs.
   
-   `docker-connect-offsets`: Stores the offsets of the where the connectors are at in a particular stream. If a task fails and needs to restart, it can continue processing from where it left off by reading the stored offset.
+     `docker-connect-offsets`: Stores the offsets of the where the connectors are at in a particular stream. If a task fails and needs to restart, it can continue processing from where it left off by reading the stored offset.
   
-   `docker-connect-status`: Stores the status of the connectors and tasks. Allows all worker nodes to know a connectors status so workers can stay in sync.
+     `docker-connect-status`: Stores the status of the connectors and tasks. Allows all worker nodes to know a connectors status so workers can stay in sync.
 
-   **Want to learn more?** [Kafka Connect Concepts](https://docs.confluent.io/platform/current/connect/index.html#kafka-connect-concepts) 
+     **Want to learn more?** [Kafka Connect Concepts](https://docs.confluent.io/platform/current/connect/index.html#kafka-connect-concepts) 
     </details>
 
 2. Create a topic
@@ -300,7 +301,7 @@ _Now that you’re a little more familiar with MongoDB and with Kafka, lets try 
 
   ![image](https://github.com/samifrank/mongodb-kafka-workshop/assets/84085490/ac9cf17e-ea0e-40af-a330-c3dfdd65e140)
 
-2. Lets execute the GET [endpoint to view what connectors (if any) are currently added to Kafka](https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connectors-(string-name)-status)
+2. Lets execute the `GET` [endpoint to view what connectors (if any) are currently added to Kafka](https://docs.confluent.io/platform/current/connect/references/restapi.html#get--connectors-(string-name)-status)
 
    `curl http://connect-data-demo:8083/connectors`
 
@@ -317,11 +318,11 @@ _Now that you’re a little more familiar with MongoDB and with Kafka, lets try 
     
   </details>
 
-3. We can use the `/connectors` endpoint with a PUT action [to add or adjust a connector](https://docs.confluent.io/platform/current/connect/references/restapi.html#put--connectors-(string-name)-config)
+3. We can use the `/connectors` endpoint with a `PUT` action [to add or adjust a connector](https://docs.confluent.io/platform/current/connect/references/restapi.html#put--connectors-(string-name)-config)
   
     a. Set up a connector configuration that will look at that new mongo collection you created earlier. Below is a sample to format your connector initially. 
       
-      Please review and update the fields within {} before executing - 💭 What do you think they should be?
+      Please review and update the fields within {} before executing.  💭 What do you think they should be?
   
     b.
      ```
@@ -378,7 +379,7 @@ _Now that you’re a little more familiar with MongoDB and with Kafka, lets try 
     c. Go back to Mongo Compass and update a record. ❓ Do you see that update in Kafka? Does the data in that update look different from other records you looked at in 6a.?
   
 7. Explore the different connector configurations and see if you can notice the changes that happen because of them.  
-  🪄 _The below configurations can be added to your existing connectors configuration that you created in Step 3._
+  🪄 _The below configurations can be added to your existing connectors configuration that you created in Step 3. Make additional updates in your Mongo collection to investigate changes_
 
   > [!IMPORTANT]
   > 
@@ -414,8 +415,8 @@ _Now that you’re a little more familiar with MongoDB and with Kafka, lets try 
     
    </details>
 
-  d. `topic.prefix` & `topic.separator`
-    🪄 To test this, you will need to create a new connector to see this change. Using _a different connector name_ in `{NAME_YOUR_CONNECTOR}` will generate a new connector instance. 
+  d. `topic.prefix` & `topic.separator`  
+  * 🪄 To test this, you will need to create a new connector to see this change. Using _a different connector name_ in `{NAME_YOUR_CONNECTOR}` will generate a new connector instance. 
 
 
 

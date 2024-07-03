@@ -1,0 +1,162 @@
+version: "3.6"
+services:
+  # MONGODB 3 node replica set
+  mongo-node1:
+    image: mongo:7.0
+    container_name: mongo-node1
+    ports:
+      - 27017:27017
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo-node1:27017', priority:1},{_id:1,host:'mongo-node2:27018',priority:.5},{_id:2,host:'mongo-node3:27019',priority:.5}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      start_interval: 1s
+      retries: 10
+    volumes:
+      - "mongo-node1_data:/data/db"
+      - "mongo-node1_config:/data/configdb"
+    depends_on:
+      - zookeeper-data-demo
+      - broker-data-demo
+      - connect-data-demo
+    networks:
+      - localnet
+    restart: always
+  
+  mongo-node2:
+    image: mongo:7.0
+    container_name: mongo-node2
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27018"]
+    ports:
+      - 27018:27018
+    volumes:
+      - "mongo-node2_data:/data/db"
+      - "mongo-node2_config:/data/configdb"
+    networks:
+      - localnet
+
+  mongo-node3:
+    image: mongo:7.0
+    container_name: mongo-node3
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27019"]
+    ports:
+      - 27019:27019
+    volumes:
+      - "mongo-node3_data:/data/db"
+      - "mongo-node3_config:/data/configdb"
+    networks:
+      - localnet
+
+  # KAFKA components
+  zookeeper-data-demo: #Metadata management of the Kafka environment. 
+    image: confluentinc/cp-zookeeper:7.2.2
+    hostname: zookeeper-data-demo
+    container_name: zookeeper-data-demo
+    networks:
+      - localnet
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker-data-demo: #brokers store and manage the data in Kafka topics.
+    image: confluentinc/cp-kafka:7.2.2
+    hostname: broker-data-demo
+    container_name: broker-data-demo
+    depends_on:
+      - zookeeper-data-demo
+    networks:
+      - localnet
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper-data-demo:2181"
+      KAFKA_LISTENERS: LISTENER_1://broker-data-demo:29092,LISTENER_2://broker-data-demo:9092
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_1://broker-data-demo:29092,LISTENER_2://broker-data-demo:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_1:PLAINTEXT,LISTENER_2:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+
+  connect-data-demo: #component that connects Kafka to other systems
+    build:
+      context: .
+      dockerfile: connect.Dockerfile #installs the mongo source connector plugin into our environment
+    ports:
+      - "35000:35000"
+    hostname: connect-data-demo
+    container_name: connect-data-demo
+    depends_on:
+      - zookeeper-data-demo
+      - broker-data-demo
+    networks:
+      - localnet
+    environment:
+      KAFKA_JMX_PORT: 35000
+      KAFKA_JMX_HOSTNAME: localhost
+      CONNECT_BOOTSTRAP_SERVERS: "broker-data-demo:29092"
+      CONNECT_REST_ADVERTISED_HOST_NAME: connect-data-demo
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: connect-cluster-group
+      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_ZOOKEEPER_CONNECT: "zookeeper-data-demo:2181"
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+      CONNECT_CONNECTIONS_MAX_IDLE_MS: 180000
+      CONNECT_METADATA_MAX_AGE_MS: 180000
+      CONNECT_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+
+  rest-proxy-data-demo: #allows you to interact with Kafka using RESTful API
+    image: confluentinc/cp-kafka-rest:7.2.2
+    depends_on:
+      - zookeeper-data-demo
+      - broker-data-demo
+    hostname: rest-proxy-data-demo
+    container_name: rest-proxy-data-demo
+    networks:
+      - localnet
+    environment:
+      KAFKA_REST_HOST_NAME: rest-proxy-data-demo
+      KAFKA_REST_BOOTSTRAP_SERVERS: "broker-data-demo:29092"
+      KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
+      KAFKA_REST_SCHEMA_REGISTRY_URL: "http://schema_registry:8081"
+
+  # Access the UI at http://localhost:8426
+  # Displays brokers, topics, messages, consumers, etc.
+  kafka-ui-data-demo:
+    image: provectuslabs/kafka-ui
+    depends_on:
+      - broker-data-demo
+      - zookeeper-data-demo
+    container_name: kafka-ui-data-demo
+    ports:
+      - "8426:8426"
+    restart: always
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=broker-data-demo:9092
+      - SERVER_PORT=8426
+    networks:
+      - localnet
+
+
+networks: #keeps containers in the same docker network
+  localnet:
+    attachable: true
+
+#sometimes volumes might need to be deleted if its caching an earlier change. These can be deleted in the DockerDesktop app if needed
+volumes: #persistent storage when container is stopped
+  mongo-node1_data:
+  mongo-node2_data:
+  mongo-node3_data:
+  mongo-node1_config:
+  mongo-node2_config:
+  mongo-node3_config:

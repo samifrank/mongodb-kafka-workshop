@@ -207,7 +207,7 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
    )
    ```
 9. Open another window in MongoDB compass and open a new `mongosh` at the bottom. Navigate to your netflix db using `use netflix` and run the following update:
-     `db.movies.updateMany({“imbd.rating”: {$gte: 9}}, {$set: { addToWatchList: true }})`
+     `db.movies.updateMany({"imbd.rating": {$gte: 9}}, {$set: { addToWatchList: true }})`
 
 Now, in your first window where you were watching the cursor, you should see 31 records that look something like this: 
 ![image](https://github.com/samifrank/mongodb-kafka-workshop/assets/84085490/cbd2cc8c-e5eb-4d95-920d-2d9d2d81962c)

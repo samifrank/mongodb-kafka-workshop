@@ -47,6 +47,16 @@ There are two tools we will need for this workshop. If you do not already have t
       ![image](https://github.com/samifrank/mongodb-kafka-workshop/assets/84085490/4c28d09b-d39d-4543-a155-78316c7189d8)
 </details>
 
+<details>
+  <summary>Docker containers not spinning up?</summary>
+
+  * If you are seeing an error message like the following:
+    ![image (2)](https://github.com/user-attachments/assets/de9a20bd-0db2-450f-99e0-4b4ba6977fba)
+
+  * Check if you are signed into Docker Desktop. If you are logged in - **log out**
+      
+</details>
+
 ## Get The Workshop Running
 
 > [!WARNING]  

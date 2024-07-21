@@ -158,7 +158,7 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
 
     b. You can also use the query builder withing MongoDB Compass to browse the data.
 
-  #TODO NEW SCREENSHOT HERE
+![image](https://github.com/user-attachments/assets/1b76ce2a-f322-4770-b858-7e16068ad118)
 
 2. Notice if you click on options in the query builder, you can leverage:
    
@@ -174,7 +174,7 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
 
     You can do a similar query in the shell:
 
-      #TODO NEW SCREENSHOT HERE
+  ![image](https://github.com/user-attachments/assets/da4d371b-4474-4d6c-9f17-dc9f05822ddc)
 
 
 3. See if you can answer the following questions about the data set using the `find` operator:

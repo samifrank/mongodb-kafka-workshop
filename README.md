@@ -73,9 +73,9 @@ There are two tools we will need for this workshop. If you do not already have t
 > In a terminal:
 >   1. navigate to the `/etc` directory on your machine
 >      
->      a. On a Windows Machine: `C:\Windows\System32\drivers\etc\hosts`
+>      a. On a Windows Machine: `C:\Windows\System32\drivers\etc`
 >
->      b. On a Mac: `/etc/hosts`
+>      b. On a Mac: `~./etc`
 >      
 >   2. `sudo nano hosts`
 >      
@@ -107,6 +107,7 @@ There are two tools we will need for this workshop. If you do not already have t
 >   * **mongosh**: The mongo shell is a Javascript environment that is used to interact with the mongod process. It is available on many MongoDB GUIs as well as downloadable for use on terminal.
 >   * **replica set**: An odd number of mongod instances that maintain the same set of data.
 
+### Getting Things Set Up in MongoDB
  1. 🌟 Create a Database and a collection using the sample_mflix movie data set.
     
     a. In the demo, we call the database `netflix` and the collection `movies`. We also import the other data sets in the sample_mflix as well and store them as other collections. The demo only utilizes the movies dataset, though.
@@ -150,12 +151,15 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
 >   
 > ❓❓❓
 
-### Exploring the Dataset and Setting up a Change Stream
+### Exploring the Dataset
 1. Try to find your favorite movie in the data set! Note, this is an older data set and the “latest” movies in the set are from 2016.
    
     a. If you want to remain in the mongosh, type `use neflix` to switch databases. Then, type `db.movies.find({ title: “Your movie title here“ })`.
 
     b. You can also use the query builder withing MongoDB Compass to browse the data.
+
+  #TODO NEW SCREENSHOT HERE
+
 2. Notice if you click on options in the query builder, you can leverage:
    
     a. **project**: this reduces the number of fields returned by the cursor
@@ -167,6 +171,11 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
     d. **index hint**: used when a query has trouble using the appropriate index
    
     ![image](https://github.com/samifrank/mongodb-kafka-workshop/assets/84085490/2cc27be2-c9e9-4bb9-899b-01ae5b90b489)
+
+    You can do a similar query in the shell:
+
+      #TODO NEW SCREENSHOT HERE
+
 
 3. See if you can answer the following questions about the data set using the `find` operator:
 
@@ -192,31 +201,53 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
       * 31
     </details>
 
-     <details>
-      <summary> ❓What was the most recent movie to receive an imbd rating greater than or equal to 9?</summary>
+    <details>
+    <summary> ❓What was the most recent movie to receive an imbd rating greater than or equal to 9?</summary>
+    
+    * “A Brave Heart: The Lizzie Velasquez Story”, 2015
+  </details>
+
+  * If you are comfortable with basic MongoDB operators and you want some aggregation practice: 
+
+    <details>
+      <summary> ❓ Bucket the movies by their runtime. Use the boundaries 1, 50, 100, 200, 300, 400, 500, 1000, 1500. Which range has the most movies?</summary>
       
-      * “A Brave Heart: The Lizzie Velasquez Story”, 2015
+      Most movies fall into the 100-200 range. 
+
+      Query: `db.movies.aggregate([{$match: {runtime: {$exists: true}}}, {$bucket: { groupBy: "$runtime", boundaries: [1, 50, 100, 200, 300, 400, 500, 1000, 1500], output: {count: {$sum: 1}}}}])`
+
     </details>
 
-4. Let’s set up our collection for pre and post imaging. Go back to your `mongosh`, make sure you are using the netflix database, and enter the following: 
+    <details>
+      <summary> ❓ What are the three most common genres in the dataset? Which three are least popular?</summary>
+      
+      Drama, comedy, romance are most popular. Least popular are talk-show, news, and film-noir. 
+
+      `db.movies.aggregate([{$unwind: "$genres"}, {$group: {_id: "$genres", count: {$sum: 1}}}, {$sort: {count: 1}}])`
+
+    </details>
+
+### Setting Up a Change Stream
+
+1. Let’s set up our collection for pre and post imaging. Go back to your `mongosh`, make sure you are using the netflix database, and enter the following: 
     ```
       db.runCommand({collMod: "movies", changeStreamPreAndPostImages: {enabled: true}})
     ```
-5. Still in the shell, run the following:
+2. Still in the shell, run the following:
    ```
      db.movies.updateMany({year: {$gte: 1967 }}, {$set: {colorRelease: true}})
      db.movies.updateMany({year: {$lt: 1967}}, {$set: {colorRelease: false}})
    ```
-6. Navigate to the config database in the shell using `use config`.
-7. Run: `db.system.preimages.findOne()`.  ❓ Do you see a record of one of the documents you just updated?
-8. Now, let us see if we can run a basic change stream. Set a watch on your cursor in your current shell using `use netflix`:
+3. Navigate to the config database in the shell using `use config`.
+4. Run: `db.system.preimages.findOne()`.  ❓ Do you see a record of one of the documents you just updated?
+5. Now, let us see if we can run a basic change stream. Set a watch on your cursor in your current shell using `use netflix`:
    ```
    watchCursorFullDocumentBeforeChange = db.movies.watch(
      [],
      { fullDocumentBeforeChange: "whenAvailable" }
    )
    ```
-9. Open another window in MongoDB compass and open a new `mongosh` at the bottom. Navigate to your netflix db using `use netflix` and run the following update:
+6. Open another window in MongoDB compass and open a new `mongosh` at the bottom. Navigate to your netflix db using `use netflix` and run the following update:
      `db.movies.updateMany({"imbd.rating": {$gte: 9}}, {$set: { addToWatchList: true }})`
 
 Now, in your first window where you were watching the cursor, you should see 31 records that look something like this: 

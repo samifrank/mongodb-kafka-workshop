@@ -187,24 +187,32 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
       * Oldest: Newark Athlete, 1891
       
       * Newest: The Masked Saint, 2016
+      * Query: `db.movies.find({released: {$exists: true}}, {released: 1, title: 1}).sort({released: -1}).limit(2)`
+
     </details>
 
     <details>
       <summary> ❓ Which movie won the most awards?</summary>
       
       * 12 Years a Slave (267 awards)
+      * Query: `db.movies.find({}, {"awards.wins": 1, "title": 1}).sort({"awards.wins": -1}).limit(1)`
+
     </details>
 
     <details>
       <summary> ❓How many movies had an imbd rating greater than or equal to 9?</summary>
       
       * 31
+      * Query: `db.movies.find({"imdb.rating": {$exists: true}, "imdb.rating": {$gte: 9}}).count()`
+
     </details>
 
     <details>
     <summary> ❓What was the most recent movie to receive an imbd rating greater than or equal to 9?</summary>
     
     * “A Brave Heart: The Lizzie Velasquez Story”, 2015
+    * Query: `db.movies.find({"imdb.rating": {$exists: true}, "imdb.rating": {$gte: 9}}, {title: 1}).sort({released: -1}).limit(1)`
+
   </details>
 
   * If you are comfortable with basic MongoDB operators and you want some aggregation practice: 
@@ -235,8 +243,8 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
     ```
 2. Still in the shell, run the following:
    ```
-     db.movies.updateMany({year: {$gte: 1967 }}, {$set: {colorRelease: true}})
-     db.movies.updateMany({year: {$lt: 1967}}, {$set: {colorRelease: false}})
+     db.movies.updateMany({released: {$gte: ISODate("1967-01-01")}}, {$set: {colorRelease: true}})
+     db.movies.updateMany({released: {$lt: ISODate("1967-01-01")}}, {$set: {colorRelease: false}})
    ```
 3. Navigate to the config database in the shell using `use config`.
 4. Run: `db.system.preimages.findOne()`.  ❓ Do you see a record of one of the documents you just updated?

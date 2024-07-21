@@ -109,10 +109,10 @@ There are two tools we will need for this workshop. If you do not already have t
 
  1. 🌟 Create a Database and a collection using the sample_mflix movie data set.
     
-    a. In the demo, we call the database `netflix` and the collection `movies`. We also import the other data sets in the sample_mflix as well and store them as other collections. The demo only utilizes the movies dataset, though.
+    a. In the demo, we call the database `netflix` and the collection `movies`. There are other data sets in the movie data set and you may see them as different collections in the demo. You do not need to import these. The demo only utilizes the movies dataset, though.
 2. Add data to this new collection by importing a JSON file.
     
-    a. :magic_wand: When you perform an import in Compass, the tool leverages a MongoDB command called [mongoimport](https://www.mongodb.com/docs/database-tools/mongoimport/) . If you were to load data from the terminal, this is the exact command you would use it the mongosh.
+    a. :magic_wand: When you perform an import in Compass, the tool leverages a MongoDB command called [mongoimport](https://www.mongodb.com/docs/database-tools/mongoimport/) . If you were to load data from the terminal, this is the exact command you would use in the mongosh.
 3. Congratulations! You officially have a three node [replica set](https://www.mongodb.com/docs/manual/replication/) populated with data!
 
 ### Exploring the Replica Set
@@ -150,7 +150,7 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
 >   
 > ❓❓❓
 
-### Exploring the Dataset and Setting up a Change Stream
+### Exploring the Dataset
 1. Try to find your favorite movie in the data set! Note, this is an older data set and the “latest” movies in the set are from 2016.
    
     a. If you want to remain in the mongosh, type `use neflix` to switch databases. Then, type `db.movies.find({ title: “Your movie title here“ })`.
@@ -173,50 +173,81 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
      🪄 If you have never worked with MongoDB queries, you may have to find some helpful operators from the MongoDB documentation (or a Google search). 
 
    <details>
-      <summary> ❓ What is the title of the oldest movie in the dataset? What is the newest? </summary>
+      <summary> ❓ What is the title of the oldest movie in the dataset based on release date? What is the newest? </summary>
       
-      * Oldest: Newark Athlete, 1891
+      * Oldest: Blacksmith Scene, 1893-05-09
       
-      * Newest: The Masked Saint, 2016
+      * Newest: The Treasure, 2016-03-23
+
+      * Query: db.movies.find({released: {$exists: true}}, {released: 1, title: 1}).sort({released: -1}).limit(2)
     </details>
 
     <details>
       <summary> ❓ Which movie won the most awards?</summary>
       
       * 12 Years a Slave (267 awards)
+
+      * Query: db.movies.find({}, {"awards.wins": 1, "title": 1}).sort({"awards.wins": -1}).limit(1)
     </details>
 
     <details>
       <summary> ❓How many movies had an imbd rating greater than or equal to 9?</summary>
       
       * 31
+
+      * Query: db.movies.find({"imdb.rating": {$exists: true}, "imdb.rating": {$gte: 9}}).count()
     </details>
 
      <details>
       <summary> ❓What was the most recent movie to receive an imbd rating greater than or equal to 9?</summary>
       
       * “A Brave Heart: The Lizzie Velasquez Story”, 2015
+
+      * Query: db.movies.find({"imdb.rating": {$exists: true}, "imdb.rating": {$gte: 9}}, {title: 1}).sort({released: -1}).limit(1)
     </details>
 
-4. Let’s set up our collection for pre and post imaging. Go back to your `mongosh`, make sure you are using the netflix database, and enter the following: 
+    If you are comfortable with basic MongoDB operators, consider trying some aggregation practice. Hint, you will need the $bucket and $unwind operators for these questions.
+
+    <details>
+      <summary> ❓Bucket the movies by their runtime. Use the boundaries 1, 50, 100, 200, 300, 400, 500, 1000, 1500. Which range has the most movies?</summary>
+
+      * Most movies fall into the 100-200 range. 
+
+      * Query: db.movies.aggregate([{$match: {runtime: {$exists: true}}}, {$bucket: { groupBy: "$runtime", boundaries: [1, 50, 100, 200, 300, 400, 500, 1000, 1500], output: {count: {$sum: 1}}}}])
+    </details>
+
+    <details>
+      <summary> ❓What are the three most common genres in the dataset? Which three are least popular?</summary>
+
+      * Drama, comedy, romance are most popular. 
+
+      * Least popular are talk-show, news, and film-noir. 
+
+      * Query: db.movies.aggregate([{$unwind: "$genres"}, {$group: {_id: "$genres", count: {$sum: 1}}}, {$sort: {count: 1}}])
+    </details>
+
+
+### Setting Up a Change Stream
+
+1. Let’s set up our collection for pre and post imaging. Go back to your `mongosh`, make sure you are using the netflix database, and enter the following: 
     ```
       db.runCommand({collMod: "movies", changeStreamPreAndPostImages: {enabled: true}})
     ```
-5. Still in the shell, run the following:
+2. Still in the shell, run the following:
    ```
      db.movies.updateMany({year: {$gte: 1967 }}, {$set: {colorRelease: true}})
      db.movies.updateMany({year: {$lt: 1967}}, {$set: {colorRelease: false}})
    ```
-6. Navigate to the config database in the shell using `use config`.
-7. Run: `db.system.preimages.findOne()`.  ❓ Do you see a record of one of the documents you just updated?
-8. Now, let us see if we can run a basic change stream. Set a watch on your cursor in your current shell using `use netflix`:
+3. Navigate to the config database in the shell using `use config`.
+4. Run: `db.system.preimages.findOne()`.  ❓ Do you see a record of one of the documents you just updated?
+5. Now, let us see if we can run a basic change stream. Set a watch on your cursor in your current shell using `use netflix`:
    ```
    watchCursorFullDocumentBeforeChange = db.movies.watch(
      [],
      { fullDocumentBeforeChange: "whenAvailable" }
    )
    ```
-9. Open another window in MongoDB compass and open a new `mongosh` at the bottom. Navigate to your netflix db using `use netflix` and run the following update:
+6. Open another window in MongoDB compass and open a new `mongosh` at the bottom. Navigate to your netflix db using `use netflix` and run the following update:
      `db.movies.updateMany({"imbd.rating": {$gte: 9}}, {$set: { addToWatchList: true }})`
 
 Now, in your first window where you were watching the cursor, you should see 31 records that look something like this: 

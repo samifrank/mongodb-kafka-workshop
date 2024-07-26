@@ -73,9 +73,9 @@ There are two tools we will need for this workshop. If you do not already have t
 > In a terminal:
 >   1. navigate to the `/etc` directory on your machine
 >      
->      a. On a Windows Machine: `C:\Windows\System32\drivers\etc\hosts`
+>      a. On a Windows Machine: `C:\Windows\System32\drivers\etc`
 >
->      b. On a Mac: `/etc/hosts`
+>      b. On a Mac: `~./etc`
 >      
 >   2. `sudo nano hosts`
 >      
@@ -107,6 +107,7 @@ There are two tools we will need for this workshop. If you do not already have t
 >   * **mongosh**: The mongo shell is a Javascript environment that is used to interact with the mongod process. It is available on many MongoDB GUIs as well as downloadable for use on terminal.
 >   * **replica set**: An odd number of mongod instances that maintain the same set of data.
 
+### Getting Things Set Up in MongoDB
  1. 🌟 Create a Database and a collection using the sample_mflix movie data set.
     
     a. In the demo, we call the database `netflix` and the collection `movies`. There are other data sets in the movie data set and you may see them as different collections in the demo. You do not need to import these. The demo only utilizes the movies dataset, though.
@@ -156,6 +157,9 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
     a. If you want to remain in the mongosh, type `use neflix` to switch databases. Then, type `db.movies.find({ title: “Your movie title here“ })`.
 
     b. You can also use the query builder withing MongoDB Compass to browse the data.
+
+![image](https://github.com/user-attachments/assets/1b76ce2a-f322-4770-b858-7e16068ad118)
+
 2. Notice if you click on options in the query builder, you can leverage:
    
     a. **project**: this reduces the number of fields returned by the cursor
@@ -168,6 +172,11 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
    
     ![image](https://github.com/samifrank/mongodb-kafka-workshop/assets/84085490/2cc27be2-c9e9-4bb9-899b-01ae5b90b489)
 
+    You can do a similar query in the shell:
+
+  ![image](https://github.com/user-attachments/assets/da4d371b-4474-4d6c-9f17-dc9f05822ddc)
+
+
 3. See if you can answer the following questions about the data set using the `find` operator:
 
      🪄 If you have never worked with MongoDB queries, you may have to find some helpful operators from the MongoDB documentation (or a Google search). 
@@ -177,9 +186,9 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
       
       * Oldest: Blacksmith Scene, 1893-05-09
       
-      * Newest: The Treasure, 2016-03-23
+      * Newest: The Masked Saint, 2016
+      * Query: `db.movies.find({released: {$exists: true}}, {released: 1, title: 1}).sort({released: -1}).limit(2)`
 
-      * Query: db.movies.find({released: {$exists: true}}, {released: 1, title: 1}).sort({released: -1}).limit(2)
     </details>
 
     <details>
@@ -187,7 +196,8 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
       
       * 12 Years a Slave (267 awards)
 
-      * Query: db.movies.find({}, {"awards.wins": 1, "title": 1}).sort({"awards.wins": -1}).limit(1)
+      * Query: `db.movies.find({}, {"awards.wins": 1, "title": 1}).sort({"awards.wins": -1}).limit(1)`
+
     </details>
 
     <details>
@@ -195,11 +205,31 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
       
       * 31
 
-      * Query: db.movies.find({"imdb.rating": {$exists: true}, "imdb.rating": {$gte: 9}}).count()
+      * Query: `db.movies.find({"imdb.rating": {$exists: true}, "imdb.rating": {$gte: 9}}).count()`
+
     </details>
 
-     <details>
-      <summary> ❓What was the most recent movie to receive an imbd rating greater than or equal to 9?</summary>
+    <details>
+    <summary> ❓What was the most recent movie to receive an imbd rating greater than or equal to 9?</summary>
+    
+    * “A Brave Heart: The Lizzie Velasquez Story”, 2015
+    * Query: `db.movies.find({"imdb.rating": {$exists: true}, "imdb.rating": {$gte: 9}}, {title: 1}).sort({released: -1}).limit(1)`
+
+  </details>
+
+  * If you are comfortable with basic MongoDB operators and you want some aggregation practice: 
+
+    <details>
+      <summary> ❓ Bucket the movies by their runtime. Use the boundaries 1, 50, 100, 200, 300, 400, 500, 1000, 1500. Which range has the most movies?</summary>
+      
+      Most movies fall into the 100-200 range. 
+
+      Query: `db.movies.aggregate([{$match: {runtime: {$exists: true}}}, {$bucket: { groupBy: "$runtime", boundaries: [1, 50, 100, 200, 300, 400, 500, 1000, 1500], output: {count: {$sum: 1}}}}])`
+
+    </details>
+
+    <details>
+      <summary> ❓ What are the three most common genres in the dataset? Which three are least popular?</summary>
       
       * “A Brave Heart: The Lizzie Velasquez Story”, 2015
 
@@ -227,6 +257,12 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
     </details>
 
 
+      Drama, comedy, romance are most popular. Least popular are talk-show, news, and film-noir. 
+
+      `db.movies.aggregate([{$unwind: "$genres"}, {$group: {_id: "$genres", count: {$sum: 1}}}, {$sort: {count: 1}}])`
+
+    </details>
+
 ### Setting Up a Change Stream
 
 1. Let’s set up our collection for pre and post imaging. Go back to your `mongosh`, make sure you are using the netflix database, and enter the following: 
@@ -235,8 +271,8 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
     ```
 2. Still in the shell, run the following:
    ```
-     db.movies.updateMany({year: {$gte: 1967 }}, {$set: {colorRelease: true}})
-     db.movies.updateMany({year: {$lt: 1967}}, {$set: {colorRelease: false}})
+     db.movies.updateMany({released: {$gte: ISODate("1967-01-01")}}, {$set: {colorRelease: true}})
+     db.movies.updateMany({released: {$lt: ISODate("1967-01-01")}}, {$set: {colorRelease: false}})
    ```
 3. Navigate to the config database in the shell using `use config`.
 4. Run: `db.system.preimages.findOne()`.  ❓ Do you see a record of one of the documents you just updated?

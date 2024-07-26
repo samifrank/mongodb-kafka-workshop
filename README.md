@@ -281,12 +281,13 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
 3. Navigate to the config database in the shell using `use config`.
 4. Run: `db.system.preimages.findOne()`.  ❓ Do you see a record of one of the documents you just updated?
 5. Now, let us see if we can run a basic change stream. Set a watch on your cursor in your current shell using `use netflix`:
-      ```
+    ```
         watchCursorFullDocumentBeforeChange = db.movies.watch(
           [],
           { fullDocumentBeforeChange: "whenAvailable" }
         )
-     
+    ```    
+    ``` 
         while ( !watchCursorFullDocumentBeforeChange.isClosed() ) {
         if ( watchCursorFullDocumentBeforeChange.hasNext() ) {
            printjson( watchCursorFullDocumentBeforeChange.next() );

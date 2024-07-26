@@ -65,6 +65,8 @@ There are two tools we will need for this workshop. If you do not already have t
 > _Add a new host definition for your local IP address to include mongo in your machines_ `/etc/hosts` file to include:
 > 
 > `127.0.0.1       mongo-node1`
+  `127.0.0.1       mongo-node2`
+  `127.0.0.1       mongo-node3`
 > 
 > _note_: `mongo-node1` is the main mongo container created in the provided file `docker-compose.yml`
 > 
@@ -282,6 +284,12 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
      [],
      { fullDocumentBeforeChange: "whenAvailable" }
    )
+
+   while ( !watchCursorFullDocumentBeforeChange.isClosed() ) {
+   if ( watchCursorFullDocumentBeforeChange.hasNext() ) {
+      printjson( watchCursorFullDocumentBeforeChange.next() );
+   }
+  }
    ```
 6. Open another window in MongoDB compass and open a new `mongosh` at the bottom. Navigate to your netflix db using `use netflix` and run the following update:
      `db.movies.updateMany({"imbd.rating": {$gte: 9}}, {$set: { addToWatchList: true }})`

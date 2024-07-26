@@ -85,7 +85,6 @@ There are two tools we will need for this workshop. If you do not already have t
 >      
 >      a. This command will allow you to edit your hosts file. Add the definition noted above.
 >      <img width="471" alt="Screenshot 2024-07-26 at 10 35 31 AM" src="https://github.com/user-attachments/assets/aa7a429b-703f-47b0-bea2-83376398030d">
-
 >    
 >   3. To save your changes: `Control + X` -> `Y`
 

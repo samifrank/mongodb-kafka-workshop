@@ -65,8 +65,8 @@ There are two tools we will need for this workshop. If you do not already have t
 > _Add a new host definition for your local IP address to include mongo in your machines_ `/etc/hosts` file to include:
 > 
 > `127.0.0.1       mongo-node1`
-  `127.0.0.1       mongo-node2`
-  `127.0.0.1       mongo-node3`
+> `127.0.0.1       mongo-node2`
+> `127.0.0.1       mongo-node3`
 > 
 > _note_: `mongo-node1` is the main mongo container created in the provided file `docker-compose.yml`
 > 

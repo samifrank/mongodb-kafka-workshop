@@ -259,9 +259,8 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
 
    while ( !watchCursorFullDocumentBeforeChange.isClosed() ) {
    if ( watchCursorFullDocumentBeforeChange.hasNext() ) {
-      printjson( watchCursorFullDocumentBeforeChange.next() );
-   }
-  }
+      printjson( watchCursorFullDocumentBeforeChange.next() );}}
+
    ```
 6. Open another window in MongoDB compass and open a new `mongosh` at the bottom. Navigate to your netflix db using `use netflix` and run the following update:
      `db.movies.updateMany({"imbd.rating": {$gte: 9}}, {$set: { addToWatchList: true }})`

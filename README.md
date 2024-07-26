@@ -281,18 +281,19 @@ Note which of your nodes is currently the Primary node.  A primary node in a rep
 3. Navigate to the config database in the shell using `use config`.
 4. Run: `db.system.preimages.findOne()`.  ❓ Do you see a record of one of the documents you just updated?
 5. Now, let us see if we can run a basic change stream. Set a watch on your cursor in your current shell using `use netflix`:
-   ```
-   watchCursorFullDocumentBeforeChange = db.movies.watch(
-     [],
-     { fullDocumentBeforeChange: "whenAvailable" }
-   )
-
-   while ( !watchCursorFullDocumentBeforeChange.isClosed() ) {
-   if ( watchCursorFullDocumentBeforeChange.hasNext() ) {
-      printjson( watchCursorFullDocumentBeforeChange.next() );
-   }
-  }
-   ```
+      ```
+        watchCursorFullDocumentBeforeChange = db.movies.watch(
+          [],
+          { fullDocumentBeforeChange: "whenAvailable" }
+        )
+     
+        while ( !watchCursorFullDocumentBeforeChange.isClosed() ) {
+        if ( watchCursorFullDocumentBeforeChange.hasNext() ) {
+           printjson( watchCursorFullDocumentBeforeChange.next() );
+        }
+       }
+    ```
+  
 6. Open another window in MongoDB compass and open a new `mongosh` at the bottom. Navigate to your netflix db using `use netflix` and run the following update:
      `db.movies.updateMany({"imbd.rating": {$gte: 9}}, {$set: { addToWatchList: true }})`
 
